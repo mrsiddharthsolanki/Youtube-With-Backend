@@ -1,0 +1,16 @@
+{
+  "name": "01youtubebackendproject",
+  "version": "1.0.0",
+  "description": "Now i can complating my Backend fast ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "React",
+    "Backend",
+    "Learn"
+  ],
+  "author": "Siddharth Solanki",
+  "license": "ISC"
+}
