@@ -32,8 +32,11 @@ const registerUser = asyncHandler( async (req, res) => {
     //! check for the user creation
     //Todo return responce
 
+    console.log("req.body",req.body);
+    
+
     const {fullName, email, password, username} = req.body
-    console.log("Register User Details:", {fullName, email, password, username});
+    // console.log("Register User Details:", {fullName, email, password, username});
 
     if(
         [fullName,email,password,username].some((field) => field?.trim() === "" )
@@ -45,22 +48,22 @@ const registerUser = asyncHandler( async (req, res) => {
         $or: [{ username }, { email }]
     })
 
-    console.log("Existed User:", exisrtedUSer);
+    // console.log("Existed User:", exisrtedUSer);
     
     if(exisrtedUSer){
         throw new ApiError(409, "User already exists with this username or email");
     }
 
-    console.log(req.files);
+    // console.log(req.files);
     const avatarLocalPath = req.files?.avatar[0].path;
     // const coverImageLocalPath =  req.files?.coverImage[0]?.path;
 
-     let coverImageLocalPath;
+    let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path
     }
 
-    console.log("avatarLocalPath", avatarLocalPath);
+    // console.log("avatarLocalPath", avatarLocalPath);
 
     if(!avatarLocalPath){
         throw new ApiError(400, "avatar File Is Required")
@@ -86,7 +89,7 @@ const registerUser = asyncHandler( async (req, res) => {
         "-password -refreshToken"
     )
 
-    console.log("createdUser", createdUser);
+    // console.log("createdUser", createdUser);
 
     if(!createdUser){
         throw new ApiError(500, "Something went wrong while registering the user")
@@ -106,8 +109,10 @@ const loginUser = asyncHandler( async (req, res) => {
     // cheack the password
     // access token and refesh token
     // send cookies 
-
+    
     const { username, email, password} = req.body;
+    console.log(email);  
+    
 
     if(! username && !email){
         throw new ApiError(400, "Username or email is required for login");
