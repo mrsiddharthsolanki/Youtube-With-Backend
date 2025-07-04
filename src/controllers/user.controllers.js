@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 const generateAccessAndRefereshTokens = async(userID) => {
     try {
@@ -420,7 +421,56 @@ const getUserChannelProfile = asyncHandler ( async (req, res) => {
     )
 })
 
+const getWatchHistory = asyncHandler( async( req, res) => {
+    const user = await User.aggregate([
+        {
+            $match : {
+                _id : mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            $lookup : {
+                from : "vidoes",
+                localField : "watchHistory",
+                foreignField : "_id",
+                as : "watchHistory",
+                pipeline : [
+                    {
+                        $lookup : {
+                            from : "users",
+                            localField: "onwer",
+                            foreignField : "_id",
+                            as : "onwer",
+                            pipeline : [
+                                {
+                                    $project : {
+                                        fullName : 1,
+                                        username : 1,
+                                        avatar : 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields : {
+                            owner : {
+                                $first : "$onwer" 
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
 
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, user[0].watchHistory, "Watch history fetched successfully")
+    )
+
+})
 
 export {
     registerUser,
@@ -432,5 +482,6 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImg,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getWatchHistory
 }
