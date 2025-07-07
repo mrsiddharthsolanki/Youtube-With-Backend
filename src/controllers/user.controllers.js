@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import { User } from "../models/user.model.js";
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
@@ -299,6 +299,8 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
         throw new ApiError(400, "Error while uploading on avatar")
     }
 
+    console.log("avatar", avatar);
+    
     const user = User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -310,6 +312,19 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
             new :true
         }
     ).select("-password")
+
+    console.log("user", user);
+
+    if(user?.avatar){
+        const oldAvatarUrl = user.avatar
+
+        // Delete the old avatar from Cloudinary
+        const segments = oldAvatarUrl.split('/');
+        const fileName = segments.pop();
+        const publicId = fileName.split('.')[0]; // Remove the file extension
+
+        await deleteFromCloudinary(publicId);
+    }
 
     return res
     .status(200)
@@ -342,6 +357,17 @@ const updateUserCoverImg = asyncHandler( async(req, res) => {
             new :true
         }
     ).select("-password")
+
+    if(user?.coverImage){
+        const oldCoverImageUrl = user.coverImage
+
+        // Delete the old cover image from Cloudinary
+        const segments = oldCoverImageUrl.split('/');
+        const fileName = segments.pop();
+        const publicId = fileName.split('.')[0]; // Remove the file extension
+
+        await deleteFromCloudinary(publicId);
+    }
 
     return res
     .status(200)
