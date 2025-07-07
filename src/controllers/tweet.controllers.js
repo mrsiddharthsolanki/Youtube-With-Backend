@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { Tweet } from "../models/tweet.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const createTweet = asyncHandler(async (req, res) => {
     //TODO: create tweet
