@@ -57,11 +57,126 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const {channelId} = req.params
+
+    if (!channelId || !mongoose.isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channel ID");
+    }
+
+    const userId = req.user._id;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+    
+    let subscriberList = [];
+    try {
+        subscriberList = await Subscription.aggregate([
+            {
+                $match: {
+                    subscriber: mongoose.Types.ObjectId(channelId)
+                }
+            },
+            {
+                $group: {
+                    _id: "$channel",
+                    subscribersCount : {
+                        $sum: 1
+                    }
+                }
+            },
+            {
+                $project: {
+                    channel: 1,
+                    subscribersCount: 1
+                }   
+            }      
+        ])
+    } catch (error) {
+        console.error("Error fetching subscribed channels:", error);
+        throw new ApiError(500, "Failed to fetch subscribed channels");   
+    }
+
+    const subscriberCount = subscriberList.length > 0 ? subscriberList[0] : 0;
+
+    res.status(200).json(
+        new ApiResponse(200, { subscriberCount }, "Subscribed channels fetched successfully")
+    )
+
 })
 
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params
+
+    if (!subscriberId || !mongoose.isValidObjectId(subscriberId)) {
+        throw new ApiError(400, "Invalid subscriber ID");
+    }
+
+    const userId = req.user._id;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const totalSubscribedChannels = await Subscription.countDocuments({
+        subscriber: mongoose.Types.ObjectId(subscriberId)
+    });
+
+    if (totalSubscribedChannels === 0) {
+        return res.status(200).json(
+            new ApiResponse(200, { channels: [], total: 0 }, "No subscribed channels found")
+        );
+    }
+
+    const subscribedChannels = await Subscription.aggregate([
+        {
+            $match : {
+                subscriber: mongoose.Types.ObjectId(subscriberId)
+            }
+        },
+        {
+            $lookup: {
+                from: "channels",
+                localField: "channel",
+                foreignField: "_id",
+                as: "channelDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar : 1,
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                channelDetails: {
+                    $arrayElemAt: ["$channelDetails", 0]
+                }
+            }
+        },
+        {
+            $project: {
+                channelDetails: 1
+            }
+        }
+    ]);
+
+    if (!subscribedChannels || subscribedChannels.length === 0) {
+        return res.status(200).json(
+            new ApiResponse(200, { channels: [], total: 0 }, "No subscribed channels found")
+        );
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, { channels: subscribedChannels, total: totalSubscribedChannels }, "Subscribed channels fetched successfully")
+    );
+    
 })
 
-export { }
+
+
+export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels }
